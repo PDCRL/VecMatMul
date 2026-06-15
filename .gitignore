@@ -1,0 +1,8 @@
+# Build output (binaries, objects, sim configs, input/output, PMU stats)
+build/
+*.o
+
+# Stray run artifacts if a kernel is executed outside build/hexagon/
+input.txt
+output.txt
+pmu_stats.txt
