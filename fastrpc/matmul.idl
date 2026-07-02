@@ -1,0 +1,76 @@
+//============================================================================
+/// @file matmul.idl
+///
+/// FastRPC interface for all VecMatMul kernel variants
+/// (port of the VecMatMul/*.c standalone QuRT kernels to run on the
+/// Hexagon CDSP via a single shared skel).
+///
+/// C[n x n] = A[n x n] * B[n x n], single-precision float, computed on the
+/// DSP. Each method below mirrors exactly one standalone kernel; see the
+/// per-file header comments in matmul_imp.c for provenance.
+//============================================================================
+
+#include "AEEStdDef.idl"
+#include "remote.idl"
+
+const string IDL_VERSION = "1.0.0";
+
+interface matmul : remote_handle64 {
+
+   /// Scalar triple-loop baseline (matmul_sequential.c). No grid/thread params.
+   long seq(in sequence<float> A,
+            in sequence<float> B,
+            rout sequence<float> C,
+            in unsigned long n,
+            rout unsigned long long cycles);
+
+   /// Scalar, rows/grids split statically across threads (matmul_experiment.c).
+   long static_(in sequence<float> A,
+                in sequence<float> B,
+                rout sequence<float> C,
+                in unsigned long n,
+                in unsigned long k,
+                in unsigned long t,
+                rout unsigned long long cycles);
+
+   /// Scalar, atomic-counter dynamic grid dispatch (matmul_dynamic.c).
+   long dynamic(in sequence<float> A,
+                in sequence<float> B,
+                rout sequence<float> C,
+                in unsigned long n,
+                in unsigned long k,
+                in unsigned long t,
+                rout unsigned long long cycles);
+
+   /// HVX kernel, single thread, 32 floats/vector (matmul_vectorized.c).
+   long hvx(in sequence<float> A,
+            in sequence<float> B,
+            rout sequence<float> C,
+            in unsigned long n,
+            rout unsigned long long cycles);
+
+   /// HVX + atomic-counter dynamic grid dispatch (matmul_vectorized_mt.c).
+   long mt(in sequence<float> A,
+           in sequence<float> B,
+           rout sequence<float> C,
+           in unsigned long n,
+           in unsigned long k,
+           in unsigned long t,
+           rout unsigned long long cycles);
+
+   /// HVX + statically assigned grids per thread (matmul_vectorized_mt_static.c).
+   long hvx_mt_static(in sequence<float> A,
+                       in sequence<float> B,
+                       rout sequence<float> C,
+                       in unsigned long n,
+                       in unsigned long k,
+                       in unsigned long t,
+                       rout unsigned long long cycles);
+
+   /// Vendor reference: qhblas_hvx_matrix_matrix_mpy_af (matmul_qhl_sdk.c).
+   long qhl_sdk(in sequence<float> A,
+                in sequence<float> B,
+                rout sequence<float> C,
+                in unsigned long n,
+                rout unsigned long long cycles);
+};
